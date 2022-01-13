@@ -8,6 +8,8 @@ use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use PDF;
+use QrCode;
 
 use App\Models\QrCollection;
 use App\Models\QrItem;
@@ -90,16 +92,36 @@ class Controller extends BaseController
         $getQrColl=QrCollection::find($CollId);
         $getQrColl->load('items');
 
-        return $getQrColl;
-
-
-
-        
-
-
-
-
-        return json_encode($QrArr);
+        return redirect()->back();
    
+    }
+
+    public function pdf($coll)
+    {
+        $coll=QrCollection::find($coll);
+        $coll->load('items');
+
+        list($r, $g, $b) = sscanf($coll['color'], "#%02x%02x%02x");
+
+        $imgArr=array();
+        foreach ($coll['items'] as $item ) {
+            
+            $t=QrCode::size(100)->color($r,$g,$b)->generate($item );
+            array_push($imgArr,base64_encode($t));
+        }
+
+        //return view('pdf',['items'=>$imgArr]);
+
+        $pdf = PDF::loadView('pdf',['items'=>$imgArr]);
+        return $pdf->download('file.pdf');
+
+    }
+
+    public function print($coll)
+    {
+        $getQrColl=QrCollection::find($coll);
+        $getQrColl->load('items');
+
+        return view('collection',['coll'=>$getQrColl]);
     }
 }
